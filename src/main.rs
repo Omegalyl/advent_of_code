@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+use std::collections::BinaryHeap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -26,13 +28,31 @@ impl Elf {
     }
 }
 
-fn load_from_file(file_path: &Path) -> Vec<Elf> {
+impl PartialOrd for Elf {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Ord for Elf {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.total_calories.cmp(&other.total_calories)
+    }
+}
+
+impl PartialEq for Elf {
+    fn eq(&self, other: &Self) -> bool {
+        self.total_calories == other.total_calories
+    }
+}
+
+impl Eq for Elf {}
+
+fn load_from_file(file_path: &Path) -> BinaryHeap<Elf> {
     let fp = File::open(file_path).expect("Unable to open file");
     let fp = BufReader::new(fp);
-    let mut vec_elf: Vec<Elf> = Vec::new();
+    let mut heap_elf: BinaryHeap<Elf> = BinaryHeap::new();
     let mut number: u32 = 1;
     let mut elf: Elf = Elf::new();
-    let mut max_calories: u32 = 0;
 
     for line in fp.lines() {
         let line = line.expect("Unable to read line");
@@ -46,11 +66,7 @@ fn load_from_file(file_path: &Path) -> Vec<Elf> {
         } else {
             elf.number = number;
             elf.update_calories();
-
-            if elf.total_calories >= max_calories {
-                max_calories = elf.total_calories;
-            }
-            vec_elf.push(elf);
+            heap_elf.push(elf);
             number += 1;
             elf = Elf::new();
         }
@@ -58,19 +74,30 @@ fn load_from_file(file_path: &Path) -> Vec<Elf> {
 
     elf.number = number;
     elf.update_calories();
-    if elf.total_calories >= max_calories {
-        max_calories = elf.total_calories;
-    }
-    println!("{} ", max_calories);
-    vec_elf.push(elf);
+    heap_elf.push(elf);
 
-    return vec_elf;
+    return heap_elf;
 }
 
 fn main() {
     let file_path = Path::new("./src/input.txt");
     println!("new asd {}", file_path.display());
-    let mut vec_elf = load_from_file(&file_path);
+    let mut heap_elf = load_from_file(&file_path);
 
-    vec_elf[3].food_items[1] -= 1000;
+    let top1 = match heap_elf.pop() {
+        Some(elf) => elf.total_calories,
+        None => panic!("no Elf left"),
+    };
+
+    let top2 = match heap_elf.pop() {
+        Some(elf) => elf.total_calories,
+        None => panic!("no Elf left"),
+    };
+
+    let top3 = match heap_elf.pop() {
+        Some(elf) => elf.total_calories,
+        None => panic!("no Elf left"),
+    };
+
+    println!("{:#?}", top1 + top2 + top3);
 }
