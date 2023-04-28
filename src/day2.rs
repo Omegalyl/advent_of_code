@@ -1,10 +1,6 @@
-use phf::{phf_map};
+use std::{path::Path, fs::File, io::{BufReader, BufRead}};
 
-static SOCRE_MAP: phf::Map<& str, u8> = phf_map! {
-    "1" => 6,
-    "0" => 0,
-    "-1" => 3
-};
+use phf::{phf_map};
 
 static INPUT_MAP: phf::Map<& str, u8> = phf_map! {
     "A" => 1,
@@ -15,51 +11,70 @@ static INPUT_MAP: phf::Map<& str, u8> = phf_map! {
     "Z" => 3
 };
 
-
-static WIN_MAP: phf::Map<& str, u8> = phf_map! {
-    "1" => 1,
-    "0" => 2,
-    "2" => 3,
-};
-
 #[derive(Debug)]
-struct Game<'a> {
-    moves: Vec<(&'a str, &'a str)>,
+struct Game {
     total_socre: u32
 }
 
-impl Game<'_> {
+impl Game {
 
-    fn new() -> Game<'static>{
-        Game { moves: Vec::new(), total_socre: 0 }
+    fn new() -> Game {
+        Game { total_socre: 0 }
     }
 
-    fn update_score(&mut self) {
-        let _move = self.moves.pop().expect("No moves left");
-        self.total_socre += self.get_socre(_move.0, _move.1)
+    fn play_round(&mut self, my_move: &str, opps_move: &str) {
+        self.update_score(my_move, opps_move)
     }
 
-    fn get_socre(&self, opps_move: &str, my_move: &str) -> u32 {
+    fn update_score(&mut self, my_move: &str, opps_move: &str) {
+        self.total_socre += self.get_socre(my_move, opps_move)
+    }
+
+    fn get_socre(&self, my_move: &str, opps_move: &str) -> u32 {
         let my_move_score = INPUT_MAP[my_move];
-        let outcome = ((my_move_score + INPUT_MAP[opps_move])%3).to_string();
-        let socre = SOCRE_MAP[&outcome];
+        let outcome = self.get_outcome(&my_move_score, &INPUT_MAP[opps_move]);
 
-        return socre.into()
+        return (my_move_score + outcome).into()
+    }
+
+    fn get_outcome(&self, my_move_score: &u8, opps_move_score: &u8) -> u8{
+        if my_move_score == opps_move_score{
+            return 3;
+        }
+        let mut outcome: u8 = 0;
+
+        if my_move_score == &1 && opps_move_score == &3 {
+            outcome = 6;
+        }
+        else if my_move_score == &2 && opps_move_score == &1 {
+            outcome = 6;
+        }
+        else if my_move_score == &3 && opps_move_score == &2 {
+            outcome = 6;
+        }
+        
+        return  outcome;
     }
 }
 
-pub fn init() {
+
+fn play_game(file_path: &Path) {
     let mut game = Game::new();
+    let fp = File::open(file_path).expect("Unable to open file");
+    let fp = BufReader::new(fp);
 
-    game.moves.push(("A", "Y"));
-    game.moves.push(("B", "X"));
-    game.moves.push(("C", "Z"));
-
-    game.update_score();
-    //game.update_score();
-    //game.update_score();
+    for line in fp.lines() {
+        let line = line.unwrap();
+        let moves: Vec<&str> = line.trim().split(" ").collect();
+        game.play_round(moves[1], moves[0])
+    }
 
     println!("{:#?}", game)
+}
+
+pub fn init() {
+    let file_path = Path::new("./src/day2.in");
+    play_game(file_path)
 }
 
 
