@@ -6,9 +6,13 @@ static INPUT_MAP: phf::Map<& str, u8> = phf_map! {
     "A" => 1,
     "B" => 2,
     "C" => 3,
-    "X" => 1,
-    "Y" => 2,
-    "Z" => 3
+};
+
+
+static OUT_MAP: phf::Map<& str, u8> = phf_map! {
+    "X" => 0,
+    "Y" => 3,
+    "Z" => 6,
 };
 
 #[derive(Debug)]
@@ -22,38 +26,41 @@ impl Game {
         Game { total_socre: 0 }
     }
 
-    fn play_round(&mut self, my_move: &str, opps_move: &str) {
-        self.update_score(my_move, opps_move)
+    fn play_round(&mut self, outcome: &str, opps_move: &str) {
+        self.update_score(outcome, opps_move)
     }
 
-    fn update_score(&mut self, my_move: &str, opps_move: &str) {
-        self.total_socre += self.get_socre(my_move, opps_move)
+    fn update_score(&mut self, outcome: &str, opps_move: &str) {
+        self.total_socre += self.get_socre(outcome, opps_move)
     }
 
-    fn get_socre(&self, my_move: &str, opps_move: &str) -> u32 {
-        let my_move_score = INPUT_MAP[my_move];
-        let outcome = self.get_outcome(&my_move_score, &INPUT_MAP[opps_move]);
+    fn get_socre(&self, outcome: &str, opps_move: &str) -> u32 {
+        let outcome_score = OUT_MAP[outcome];
+        let my_move_score = self.get_my_move(&outcome_score, &INPUT_MAP[opps_move]);
 
-        return (my_move_score + outcome).into()
+        return (my_move_score + outcome_score).into()
     }
 
-    fn get_outcome(&self, my_move_score: &u8, opps_move_score: &u8) -> u8{
-        if my_move_score == opps_move_score{
-            return 3;
+    fn get_my_move(&self, outcome_score: &u8, opps_move_score: &u8) -> u8{
+        if outcome_score == &3{
+            return *opps_move_score;
         }
-        let mut outcome: u8 = 0;
+        let mut my_move_score: u8 = 1;
 
-        if my_move_score == &1 && opps_move_score == &3 {
-            outcome = 6;
+        if outcome_score == &6 {
+            my_move_score = opps_move_score + 1;
+            if my_move_score == 4 {
+                return  1;
+            }
         }
-        else if my_move_score == &2 && opps_move_score == &1 {
-            outcome = 6;
-        }
-        else if my_move_score == &3 && opps_move_score == &2 {
-            outcome = 6;
+        else if outcome_score == &0 {
+            my_move_score = opps_move_score - 1;
+            if my_move_score == 0 {
+                return 3;
+            }
         }
         
-        return  outcome;
+        return  my_move_score;
     }
 }
 
